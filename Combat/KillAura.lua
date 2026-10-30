@@ -66,10 +66,10 @@ end
 function module.Start(uiParent)
     if not uiParent then return end
     
-    -- 1. Кнопка включения
+    -- 1. Кнопка включения (УБРАЛИ POSITION)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, -10, 0, 40)
-    toggleBtn.Position = UDim2.new(0, 5, 0, 5)
+    toggleBtn.LayoutOrder = 1
     toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
     toggleBtn.Text = "⚔️ ВКЛЮЧИТЬ АУРУ (Z)"
     toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -77,10 +77,10 @@ function module.Start(uiParent)
     toggleBtn.Parent = uiParent
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
-    -- 2. Ползунок глубины
+    -- 2. Текст глубины (УБРАЛИ POSITION)
     local depthLabel = Instance.new("TextLabel")
     depthLabel.Size = UDim2.new(1, -10, 0, 20)
-    depthLabel.Position = UDim2.new(0, 5, 0, 50)
+    depthLabel.LayoutOrder = 2
     depthLabel.BackgroundTransparency = 1
     depthLabel.Text = "Глубина: " .. currentDepth .. "м"
     depthLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -88,11 +88,17 @@ function module.Start(uiParent)
     depthLabel.TextSize = 14
     depthLabel.Parent = uiParent
 
+    -- 3. Ползунок глубины (ОБЕРНУЛИ В РАМКУ, УБРАЛИ POSITION)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(1, -10, 0, 15)
+    sliderFrame.LayoutOrder = 3
+    sliderFrame.BackgroundTransparency = 1
+    sliderFrame.Parent = uiParent
+
     local sliderBg = Instance.new("Frame")
-    sliderBg.Size = UDim2.new(1, -10, 0, 10)
-    sliderBg.Position = UDim2.new(0, 5, 0, 75)
+    sliderBg.Size = UDim2.new(1, 0, 1, 0)
     sliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-    sliderBg.Parent = uiParent
+    sliderBg.Parent = sliderFrame
     Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(0, 5)
 
     local sliderFill = Instance.new("Frame")
@@ -108,10 +114,10 @@ function module.Start(uiParent)
     sliderKnob.Parent = sliderBg
     Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
-    -- 3. Кнопка смены бинда
+    -- 4. Кнопка смены бинда (УБРАЛИ POSITION)
     local bindBtn = Instance.new("TextButton")
     bindBtn.Size = UDim2.new(1, -10, 0, 30)
-    bindBtn.Position = UDim2.new(0, 5, 0, 95)
+    bindBtn.LayoutOrder = 4
     bindBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
     bindBtn.Text = "Бинд: " .. currentBind.Name
     bindBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -178,7 +184,7 @@ function module.Start(uiParent)
     task.spawn(function()
         local originalY = nil
         local currentTarget = nil
-        local bodyPos = nil -- Создаем BodyPosition для плавного полета
+        local bodyPos = nil
         
         while true do
             task.wait(0.1)
@@ -187,7 +193,6 @@ function module.Start(uiParent)
                 if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
                 local hrp = char.HumanoidRootPart
                 
-                -- Проверяем цель
                 local targetIsDead = false
                 if not currentTarget or not currentTarget.Parent then
                     targetIsDead = true
@@ -200,11 +205,9 @@ function module.Start(uiParent)
                     currentTarget = getClosestEnemy()
                 end
                 
-                -- Если цель есть, плавно летим к ней
                 if currentTarget then
                     if not originalY then originalY = hrp.Position.Y end
                     
-                    -- Создаем магнит, если его нет
                     if not bodyPos then
                         bodyPos = Instance.new("BodyPosition")
                         bodyPos.MaxForce = Vector3.new(100000, 100000, 100000)
@@ -213,18 +216,14 @@ function module.Start(uiParent)
                         bodyPos.Parent = hrp
                     end
                     
-                    -- Устанавливаем точку, куда лететь (под цель)
                     local targetPos = Vector3.new(
                         currentTarget.Position.X, 
                         currentTarget.Position.Y - currentDepth, 
                         currentTarget.Position.Z
                     )
                     bodyPos.Position = targetPos
-                    
-                    -- Отключаем фиксацию, чтобы тело двигалось плавно
                     hrp.Anchored = false
                 else
-                    -- Если цели нет, убираем магнит и возвращаемся
                     if bodyPos then bodyPos:Destroy(); bodyPos = nil end
                     if originalY and hrp.Position.Y < originalY - 1 then
                         hrp.CFrame = CFrame.new(hrp.Position.X, originalY, hrp.Position.Z)
@@ -232,7 +231,6 @@ function module.Start(uiParent)
                     originalY = nil
                 end
             else
-                -- Выключено
                 if bodyPos then bodyPos:Destroy(); bodyPos = nil end
                 currentTarget = nil
                 local char = player.Character

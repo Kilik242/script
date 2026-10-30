@@ -27,7 +27,7 @@ function module.SetupTabs(parentFrame)
 
     local tabs = {}
     local contents = {}
-    local tabsData = {} -- Сюда сохраним ссылки на контейнеры
+    local tabsData = {}
 
     local function createTab(name, index)
         local btn = Instance.new("TextButton")
@@ -41,14 +41,22 @@ function module.SetupTabs(parentFrame)
         btn.Parent = tabContainer
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
         
+        -- СОЗДАЕМ СКРОЛЛ ДЛЯ КОНТЕНТА (чтобы все кнопки влезали)
         local content = Instance.new("ScrollingFrame")
         content.Size = UDim2.new(1, -10, 1, -10)
         content.Position = UDim2.new(0, 5, 0, 5)
         content.BackgroundTransparency = 1
         content.CanvasSize = UDim2.new(0, 0, 0, 0)
         content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        content.ScrollBarThickness = 4
         content.Visible = false
         content.Parent = contentContainer
+        
+        -- АВТО-РАССТАНОВКА (все кнопки друг под другом)
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 5)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = content
         
         table.insert(tabs, btn)
         table.insert(contents, content)
@@ -62,7 +70,6 @@ function module.SetupTabs(parentFrame)
             content.Visible = true
         end)
         
-        -- Сохраняем контейнер для возврата
         tabsData[name] = content
         return content
     end
@@ -70,15 +77,15 @@ function module.SetupTabs(parentFrame)
     -- Создаем вкладки
     createTab("⚔️ Боевое", 1)
     createTab("📂 Сканеры", 2)
-    createTab("⚙️ Настройки", 3)
+    createTab("⛏️ Руды", 3)
+    createTab("🧲 Прикрепление", 4)
+    createTab("⚙️ Настройки", 5)
 
     -- Активируем первую
     tabs[1].BackgroundColor3 = tabActive
     contents[1].Visible = true
 
     print("✅ Вкладки успешно созданы!")
-    
-    -- ВОЗВРАЩАЕМ таблицу с контейнерами
     return tabsData
 end
 

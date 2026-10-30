@@ -11,10 +11,10 @@ local bodyGyro = nil
 function module.Start(uiParent)
     if not uiParent then return end
 
-    -- Кнопка ВКЛ/ВЫКЛ
+    -- 1. Кнопка ВКЛ/ВЫКЛ
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, -10, 0, 40)
-    toggleBtn.Position = UDim2.new(0, 5, 0, 5)
+    toggleBtn.LayoutOrder = 1 -- Порядок
     toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
     toggleBtn.Text = "🕊️ ВКЛЮЧИТЬ ПОЛЕТ"
     toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -22,10 +22,10 @@ function module.Start(uiParent)
     toggleBtn.Parent = uiParent
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Ползунок скорости
+    -- 2. Ползунок скорости
     local speedLabel = Instance.new("TextLabel")
     speedLabel.Size = UDim2.new(1, -10, 0, 20)
-    speedLabel.Position = UDim2.new(0, 5, 0, 55)
+    speedLabel.LayoutOrder = 2
     speedLabel.BackgroundTransparency = 1
     speedLabel.Text = "Скорость: " .. flySpeed
     speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -33,7 +33,6 @@ function module.Start(uiParent)
     speedLabel.TextSize = 14
     speedLabel.Parent = uiParent
 
-    -- Логика полета
     local function toggleFly()
         isFlying = not isFlying
         toggleBtn.Text = isFlying and "🕊️ ВЫКЛЮЧИТЬ ПОЛЕТ" or "🕊️ ВКЛЮЧИТЬ ПОЛЕТ"
@@ -45,7 +44,6 @@ function module.Start(uiParent)
 
         if isFlying then
             if hrp then
-                -- Создаем физику для полета
                 bodyVelocity = Instance.new("BodyVelocity")
                 bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
                 bodyVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -58,7 +56,6 @@ function module.Start(uiParent)
                 bodyGyro.Parent = hrp
             end
         else
-            -- Удаляем физику
             if bodyVelocity then bodyVelocity:Destroy() end
             if bodyGyro then bodyGyro:Destroy() end
             bodyVelocity = nil
@@ -68,7 +65,6 @@ function module.Start(uiParent)
 
     toggleBtn.MouseButton1Click:Connect(toggleFly)
 
-    -- Цикл полета
     RunService.RenderStepped:Connect(function()
         if isFlying then
             local char = player.Character
@@ -78,16 +74,13 @@ function module.Start(uiParent)
             
             if hrp and bodyVelocity and bodyGyro then
                 bodyGyro.CFrame = cam.CFrame
-                
                 local moveDir = Vector3.new(0, 0, 0)
                 local speed = flySpeed
                 
-                -- WASD
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-                -- Space/Ctrl (вверх/вниз)
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
                 
