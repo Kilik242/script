@@ -4,7 +4,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 
 local isAutoAttackActive = false
-local attackDelay = 0.2 -- Задержка между ударами (по умолчанию)
+local attackDelay = 0.2
 
 -- СПИСКИ (как в Ауре)
 local IGNORE_NAMES = {
@@ -63,11 +63,10 @@ local function getClosestEnemyTorso()
     return closest
 end
 
--- МУЛЬТИ-КЛИК (3 быстрых клика подряд)
+-- Клик мышкой (мульти-клик)
 local function multiClick()
     if VirtualInputManager then
         for i = 1, 3 do
-            -- Эмуляция нажатия (как на ПК, так и на телефоне)
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
             task.wait(0.01)
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
@@ -88,7 +87,6 @@ end
 function module.Start(uiParent)
     if not uiParent then return end
 
-    -- 1. Кнопка ВКЛ/ВЫКЛ
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, -10, 0, 40)
     toggleBtn.LayoutOrder = 8
@@ -99,7 +97,7 @@ function module.Start(uiParent)
     toggleBtn.Parent = uiParent
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
-    -- 2. Ползунок скорости (задержки)
+    -- Ползунок скорости
     local speedFrame = Instance.new("Frame")
     speedFrame.Size = UDim2.new(1, -10, 0, 25)
     speedFrame.LayoutOrder = 9
@@ -132,7 +130,7 @@ function module.Start(uiParent)
     local function updateSlider(percent)
         percent = math.clamp(percent, 0, 1)
         sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-        attackDelay = 0.05 + (percent * 0.45) -- От 0.05 до 0.5 сек
+        attackDelay = 0.05 + (percent * 0.45)
         speedLabel.Text = string.format("Скорость ударов: %.2f", attackDelay)
     end
 
@@ -151,6 +149,23 @@ function module.Start(uiParent)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
     end)
 
+    -- УМНАЯ ПРОВЕРКА МЕЧА
+    local function ensureWeaponEquipped()
+        local char = player.Character
+        if not char then return false end
+        
+        -- Проверяем, есть ли уже Tool в руках
+        local equippedTool = char:FindFirstChildWhichIsA("Tool")
+        if equippedTool then
+            return true -- Меч уже в руках, ничего делать не надо
+        end
+        
+        -- Если меча нет в руках, жмем "2" (достаем)
+        pressKey(Enum.KeyCode.Two)
+        task.wait(0.2) -- Ждем, пока игра наденет меч
+        return false
+    end
+
     -- Логика Авто-Атаки
     local function toggleAutoAttack()
         isAutoAttackActive = not isAutoAttackActive
@@ -158,7 +173,7 @@ function module.Start(uiParent)
         toggleBtn.BackgroundColor3 = isAutoAttackActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 150)
 
         if isAutoAttackActive then
-            print("⚔️ Авто-атака ВКЛЮЧЕНА (Мульти-Клик)")
+            print("⚔️ Авто-атака ВКЛЮЧЕНА")
             task.spawn(function()
                 while isAutoAttackActive do
                     task.wait(attackDelay)
@@ -166,11 +181,15 @@ function module.Start(uiParent)
                     local targetTorso = getClosestEnemyTorso()
                     
                     if targetTorso then
-                        -- Жмем "2" (достаем меч)
-                        pressKey(Enum.KeyCode.Two)
-                        task.wait(0.05)
+                        -- 1. УМНАЯ ПРОВЕРКА: если меча нет в руках, достаем
+                        local equipped = ensureWeaponEquipped()
                         
-                        -- Бьем мульти-кликом (3 клика подряд)
+                        -- Если меч только что достали, ждем немного
+                        if not equipped then
+                            task.wait(0.1)
+                        end
+                        
+                        -- 2. Бьем мульти-кликом
                         multiClick()
                     end
                 end
