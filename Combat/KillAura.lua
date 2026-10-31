@@ -43,13 +43,9 @@ local function getClosestEnemy()
     local myPos = char.HumanoidRootPart.Position
     
     local closest = nil
-    local minDist = 10000 -- Твой радиус (10к)
+    local minDist = 10000
     
-    -- Ищем детали в радиусе (быстро, на уровне движка, без лагов)
-    local partsInRadius = workspace:GetPartBoundsInRadius(myPos, minDist)
-    
-    for _, obj in ipairs(partsInRadius) do
-        -- Проверяем, что это модель с Humanoid (моб)
+    for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
             local humanoid = obj:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health > 0 and obj ~= char and isEnemy(obj) and not isIgnored(obj) then
