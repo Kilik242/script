@@ -19,18 +19,16 @@ end
 function module.Start(uiParent)
     if not uiParent then return end
 
-    -- Кнопка выбора
     local selectBtn = Instance.new("TextButton")
     selectBtn.Size = UDim2.new(1, -10, 0, 40)
     selectBtn.LayoutOrder = 1
     selectBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 220)
-    selectBtn.Text = "🧲 Выбрать деталь (Кликни)"
+    selectBtn.Text = "🧲 Выбрать деталь"
     selectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     selectBtn.Font = Enum.Font.GothamBold
     selectBtn.Parent = uiParent
     Instance.new("UICorner", selectBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Статус
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(1, -10, 0, 20)
     statusLabel.LayoutOrder = 2
@@ -41,7 +39,6 @@ function module.Start(uiParent)
     statusLabel.TextSize = 12
     statusLabel.Parent = uiParent
 
-    -- Кнопки высоты
     local btnUp = Instance.new("TextButton")
     btnUp.Size = UDim2.new(0.48, -5, 0, 30)
     btnUp.LayoutOrder = 3
@@ -62,7 +59,6 @@ function module.Start(uiParent)
     btnDown.Parent = uiParent
     Instance.new("UICorner", btnDown).CornerRadius = UDim.new(0, 6)
 
-    -- Кнопка отключения
     local detachBtn = Instance.new("TextButton")
     detachBtn.Size = UDim2.new(1, -10, 0, 30)
     detachBtn.LayoutOrder = 5
@@ -73,7 +69,6 @@ function module.Start(uiParent)
     detachBtn.Parent = uiParent
     Instance.new("UICorner", detachBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Логика выбора
     selectBtn.MouseButton1Click:Connect(function()
         selecting = true
         statusLabel.Text = "Кликни по детали..."
@@ -110,7 +105,6 @@ function module.Start(uiParent)
         selecting = false
     end)
 
-    -- Кнопки высоты
     btnUp.MouseButton1Click:Connect(function()
         if targetPart then currentHeight = currentHeight + 5 end
     end)
@@ -119,7 +113,6 @@ function module.Start(uiParent)
     end)
     detachBtn.MouseButton1Click:Connect(detach)
 
-    -- Слежение
     RunService.Heartbeat:Connect(function()
         if targetPart and bodyPos then
             bodyPos.Position = Vector3.new(targetPart.Position.X, targetPart.Position.Y + currentHeight + 5, targetPart.Position.Z)
