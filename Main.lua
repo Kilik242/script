@@ -1,73 +1,31 @@
--- Базовый URL
 local baseUrl = "https://raw.githubusercontent.com/Kilik242/script/main/"
 
--- Функция загрузки с выводом ошибок
 local function loadModule(path)
     local url = baseUrl .. path
     print("📥 Загрузка: " .. url)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(url))()
     end)
-    if success then 
-        return result 
-    else 
-        warn("❌ ОШИБКА В МОДУЛЕ: " .. path)
-        warn("Текст ошибки: " .. tostring(result))
-        return nil 
-    end
+    if success then return result else warn("❌ Ошибка: " .. path); return nil end
 end
 
--- 1. Окно
+print("1. Загружаю окно...")
 local UI = loadModule("UI/MainWindow.lua")
 if not UI then return end
 local mainFrame = UI.CreateWindow()
 if not mainFrame then return end
 
--- 2. Вкладки
+print("2. Загружаю вкладки...")
 local Tabs = loadModule("UI/Tabs.lua")
 local tabContainers = nil
 if Tabs and mainFrame then
     tabContainers = Tabs.SetupTabs(mainFrame)
 end
 
--- 3. Модули
 if tabContainers then
-    
-    -- БОЕВОЕ
-    local tabCombat = tabContainers["⚔️ Боевое"]
-    if tabCombat then
-        local KillAura = loadModule("Combat/KillAura.lua")
-        if KillAura then KillAura.Start(tabCombat) end
-        
-        local Fly = loadModule("Combat/Fly.lua")
-        if Fly then Fly.Start(tabCombat) end
+    print("✅ Вкладки созданы успешно!")
+else
+    warn("❌ Вкладки НЕ созданы (tabContainers = nil)")
+end
 
-        local Noclip = loadModule("Combat/Noclip.lua")
-        if Noclip then Noclip.Start(tabCombat) end
-    end
-
-    -- СКАНЕРЫ
-    local tabExplorer = tabContainers["📂 Сканеры"]
-    if tabExplorer then
-        local NPCScanner = loadModule("Explorer/NPCScanner.lua")
-        if NPCScanner then NPCScanner.Start(tabExplorer) end
-
-        local ChestScanner = loadModule("Explorer/ChestScanner.lua")
-        if ChestScanner then ChestScanner.Start(tabExplorer) end
-    end
-
-    -- РУДЫ
-    local tabOres = tabContainers["⛏️ Руды"]
-    if tabOres then
-        local OreRadar = loadModule("Explorer/OreRadar.lua")
-        if OreRadar then OreRadar.Start(tabOres) end
-    end
-
-      ================= ВКЛАДКА "ПРИКРЕПЛЕНИЕ" =================
-    local tabAttach = tabContainers["🧲 Прикрепление"]
-    if tabAttach then
-        local Attach = loadModule("Combat/Attach.lua") -- Путь ведет в Combat
-        if Attach then Attach.Start(tabAttach) end
-    else
-        warn("❌ Не найдена вкладка '🧲 Прикрепление'")
-    end
+print("✅ Тест завершен!")
