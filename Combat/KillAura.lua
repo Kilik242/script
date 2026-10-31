@@ -43,7 +43,7 @@ local function getClosestEnemy()
     local myPos = char.HumanoidRootPart.Position
     
     local closest = nil
-    local minDist = 10000
+    local minDist = 5000
     
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
