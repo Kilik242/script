@@ -10,12 +10,10 @@ local MAX_HEIGHT = 200
 local MIN_HEIGHT = -200
 -- =====================
 
--- ===== СОСТОЯНИЕ =====
 local targetPart = nil
 local currentHeight = 0
 local selecting = false
 local bodyPos = nil
-local alignOrient = nil
 
 local function getHRP()
     local char = player.Character
@@ -25,12 +23,8 @@ end
 local function detach()
     local hrp = getHRP()
     if hrp then
-        local w = hrp:FindFirstChild("AttachWeld")
-        if w then w:Destroy() end
         local bp = hrp:FindFirstChild("HeightBodyPosition")
         if bp then bp:Destroy() end
-        local ao = hrp:FindFirstChild("HeightAlignOrient")
-        if ao then ao:Destroy() end
         local hum = player.Character:FindFirstChildOfClass("Humanoid")
         if hum then
             hum.PlatformStand = false
@@ -38,7 +32,6 @@ local function detach()
         end
     end
     bodyPos = nil
-    alignOrient = nil
     targetPart = nil
     currentHeight = 0
 end
@@ -46,7 +39,7 @@ end
 function module.Start(uiParent)
     if not uiParent then return end
 
-    -- Кнопка Выбора
+    -- 1. Кнопка Выбора
     local selectBtn = Instance.new("TextButton")
     selectBtn.Size = UDim2.new(1, -10, 0, 40)
     selectBtn.LayoutOrder = 1
@@ -57,7 +50,7 @@ function module.Start(uiParent)
     selectBtn.Parent = uiParent
     Instance.new("UICorner", selectBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Статус
+    -- 2. Статус
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(1, -10, 0, 20)
     statusLabel.LayoutOrder = 2
@@ -69,7 +62,7 @@ function module.Start(uiParent)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = uiParent
 
-    -- Высота (текст)
+    -- 3. Высота
     local heightLabel = Instance.new("TextLabel")
     heightLabel.Size = UDim2.new(1, -10, 0, 28)
     heightLabel.LayoutOrder = 3
@@ -81,7 +74,7 @@ function module.Start(uiParent)
     heightLabel.TextXAlignment = Enum.TextXAlignment.Left
     heightLabel.Parent = uiParent
 
-    -- Кнопки высоты
+    -- 4. Кнопки высоты
     local btnUp = Instance.new("TextButton")
     btnUp.Size = UDim2.new(0.32, -5, 0, 30)
     btnUp.LayoutOrder = 4
@@ -112,7 +105,7 @@ function module.Start(uiParent)
     btnReset.Parent = uiParent
     Instance.new("UICorner", btnReset).CornerRadius = UDim.new(0, 6)
 
-    -- Кнопка Отключить
+    -- 5. Кнопка Отключить
     local detachBtn = Instance.new("TextButton")
     detachBtn.Size = UDim2.new(1, -10, 0, 30)
     detachBtn.LayoutOrder = 7
@@ -123,13 +116,12 @@ function module.Start(uiParent)
     detachBtn.Parent = uiParent
     Instance.new("UICorner", detachBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Функция обновления текста высоты
     local function updateHeightLabel()
         heightLabel.Text = string.format("Высота: %.1f", currentHeight)
         heightLabel.TextColor3 = currentHeight < 0 and Color3.fromRGB(255, 160, 100) or Color3.fromRGB(120, 220, 255)
     end
 
-    -- Функция прикрепления
+    -- Логика прикрепления (БЕЗ Weld)
     local function attachTo(part)
         if not part or not part:IsA("BasePart") then return end
         detach()
@@ -146,34 +138,13 @@ function module.Start(uiParent)
         hum.PlatformStand = true
         hrp.Anchored = false
 
-        -- Создаем Weld (чтобы жестко зафиксировать по X и Z)
-        local weld = Instance.new("Weld")
-        weld.Name = "AttachWeld"
-        weld.Part0 = hrp
-        weld.Part1 = part
-        weld.C0 = CFrame.new(0, 5, 0) -- Смещение вверх
-        weld.Parent = hrp
-
-        -- BodyPosition для управления высотой (только по Y)
+        -- Создаем BodyPosition, который держит по ВСЕМ осям, но Y мы будем менять кнопками
         bodyPos = Instance.new("BodyPosition")
         bodyPos.Name = "HeightBodyPosition"
-        bodyPos.MaxForce = Vector3.new(0, 100000, 0) -- ТОЛЬКО Y
+        bodyPos.MaxForce = Vector3.new(100000, 100000, 100000) -- Держит по всем осям
         bodyPos.P = 15000
         bodyPos.D = 1500
         bodyPos.Parent = hrp
-
-        -- AlignOrientation для поворота
-        alignOrient = Instance.new("AlignOrientation")
-        alignOrient.Name = "HeightAlignOrient"
-        alignOrient.Mode = Enum.OrientationAlignmentMode.OneAttachment
-        alignOrient.MaxTorque = 50000
-        alignOrient.Responsiveness = 50
-        alignOrient.Parent = hrp
-
-        local attach0 = Instance.new("Attachment")
-        attach0.Name = "AlignOrientAttach"
-        attach0.Parent = hrp
-        alignOrient.Attachment0 = attach0
 
         statusLabel.Text = "Прикреплён: " .. part.Name
         statusLabel.TextColor3 = Color3.fromRGB(120, 255, 150)
@@ -229,23 +200,18 @@ function module.Start(uiParent)
         end
     end)
 
-    -- Слежение за деталью (обновляет высоту)
+    -- Слежение за деталью (обновляет позицию X и Z, Y - от height)
     RunService.Heartbeat:Connect(function()
         if not targetPart or not bodyPos or not bodyPos.Parent then return end
         local hrp = getHRP()
         if not hrp then return end
 
-        -- Работает и для отрицательных значений
         local targetPos = Vector3.new(
             targetPart.Position.X,
             targetPart.Position.Y + currentHeight + 5,
             targetPart.Position.Z
         )
         bodyPos.Position = targetPos
-
-        if alignOrient and alignOrient.Attachment0 then
-            alignOrient.CFrame = targetPart.CFrame
-        end
     end)
 
     -- Респавн
