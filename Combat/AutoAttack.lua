@@ -4,7 +4,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local isAutoAttackActive = false
 
--- СПИСКИ (как в Ауре)
+-- СПИСКИ (как в Ауре, чтобы не бить торговцев)
 local IGNORE_NAMES = {
     "poppy", "benji", "simon", "zack", "zacks", "trader", "shop", "merchant", 
     "seller", "guard", "npc", "postmaster", "banker", "repairing", 
@@ -34,14 +34,14 @@ local function isEnemy(obj)
     return false
 end
 
--- Поиск ближайшего врага (в радиусе меча, 15 метров)
+-- Поиск ближайшего врага (ищем по Торсу или Голове)
 local function getClosestEnemy()
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     local myPos = char.HumanoidRootPart.Position
     
     local closest = nil
-    local minDist = 15 -- РАДИУС МЕЧА (близко)
+    local minDist = 15 -- Радиус удара (15 метров)
     
     local partsInRadius = workspace:GetPartBoundsInRadius(myPos, minDist)
     
@@ -49,7 +49,11 @@ local function getClosestEnemy()
         if obj:IsA("Model") then
             local humanoid = obj:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health > 0 and obj ~= char and isEnemy(obj) and not isIgnored(obj) then
-                local targetPart = obj:FindFirstChild("Torso") or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                -- Ищем Торс или Голову
+                local targetPart = obj:FindFirstChild("Torso") 
+                                 or obj:FindFirstChild("Head") 
+                                 or obj:FindFirstChild("HumanoidRootPart")
+                
                 if targetPart then
                     local dist = (targetPart.Position - myPos).Magnitude
                     if dist < minDist then
@@ -63,7 +67,7 @@ local function getClosestEnemy()
     return closest
 end
 
--- Клик мышкой
+-- Клик мышкой (без изменения камеры)
 local function clickMouse()
     if VirtualInputManager then
         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
@@ -91,7 +95,7 @@ function module.Start(uiParent)
         toggleBtn.BackgroundColor3 = isAutoAttackActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 150)
 
         if isAutoAttackActive then
-            print("⚔️ Авто-атака ВКЛЮЧЕНА")
+            print("⚔️ Авто-атака ВКЛЮЧЕНА (радиус 15)")
             task.spawn(function()
                 while isAutoAttackActive do
                     task.wait(0.15)
@@ -100,26 +104,24 @@ function module.Start(uiParent)
                     if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     
-                    -- Ищем цель в радиусе меча
                     local target = getClosestEnemy()
                     
                     if target and hum then
-                        -- 1. БЕРЕМ МЕЧ В РУКИ (через EquipTool)
+                        -- 1. Берем меч в руки
                         local tool = char:FindFirstChildWhichIsA("Tool")
                         if not tool then
-                            -- Если меча нет в руках, берем из рюкзака
                             local backpack = player:FindFirstChild("Backpack")
                             if backpack then
                                 tool = backpack:FindFirstChildWhichIsA("Tool")
                             end
                         end
                         
-                        -- Если нашли инструмент, надеваем
                         if tool and tool.Parent ~= char then
                             hum:EquipTool(tool)
+                            task.wait(0.1) -- Даем время надеть
                         end
                         
-                        -- 2. БЬЕМ (кликаем)
+                        -- 2. Бьем (кликаем)
                         clickMouse()
                     end
                 end
