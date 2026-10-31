@@ -9,28 +9,35 @@ local function loadModule(path)
     if success then return result else warn("❌ Ошибка: " .. path); return nil end
 end
 
-print("1. Загружаю окно...")
+-- 1. Окно
 local UI = loadModule("UI/MainWindow.lua")
 if not UI then return end
 local mainFrame = UI.CreateWindow()
 if not mainFrame then return end
 
-print("2. Загружаю вкладки...")
+-- 2. Вкладки
 local Tabs = loadModule("UI/Tabs.lua")
 local tabContainers = nil
 if Tabs and mainFrame then
     tabContainers = Tabs.SetupTabs(mainFrame)
 end
 
-print("3. Проверка вкладок...")
+-- 3. Боевые модули
 if tabContainers then
-    print("✅ Вкладки созданы!")
-    -- Выводим список всех вкладок для проверки
-    for name, _ in pairs(tabContainers) do
-        print("Найдена вкладка: " .. name)
+    local tabCombat = tabContainers["⚔️ Боевое"]
+    if tabCombat then
+        print("Загружаю Ауру...")
+        local KillAura = loadModule("Combat/KillAura.lua")
+        if KillAura then KillAura.Start(tabCombat) end
+
+        print("Загружаю Флай...")
+        local Fly = loadModule("Combat/Fly.lua")
+        if Fly then Fly.Start(tabCombat) end
+
+        print("Загружаю Ноклип...")
+        local Noclip = loadModule("Combat/Noclip.lua")
+        if Noclip then Noclip.Start(tabCombat) end
     end
-else
-    warn("❌ Вкладки НЕ созданы!")
 end
 
-print("✅ Тест завершен (без модулей)")
+print("✅ Тест Боевых модулей завершен!")
