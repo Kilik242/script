@@ -63,7 +63,7 @@ if tabContainers then
         if OreRadar then OreRadar.Start(tabOres) end
     end
 
-     -- ================= ВКЛАДКА "ПРИКРЕПЛЕНИЕ" =================
+      ================= ВКЛАДКА "ПРИКРЕПЛЕНИЕ" =================
     local tabAttach = tabContainers["🧲 Прикрепление"]
     if tabAttach then
         local Attach = loadModule("Combat/Attach.lua") -- Путь ведет в Combat
