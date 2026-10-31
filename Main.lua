@@ -22,10 +22,15 @@ if Tabs and mainFrame then
     tabContainers = Tabs.SetupTabs(mainFrame)
 end
 
+print("3. Проверка вкладок...")
 if tabContainers then
-    print("✅ Вкладки созданы успешно!")
+    print("✅ Вкладки созданы!")
+    -- Выводим список всех вкладок для проверки
+    for name, _ in pairs(tabContainers) do
+        print("Найдена вкладка: " .. name)
+    end
 else
-    warn("❌ Вкладки НЕ созданы (tabContainers = nil)")
+    warn("❌ Вкладки НЕ созданы!")
 end
 
-print("✅ Тест завершен!")
+print("✅ Тест завершен (без модулей)")
