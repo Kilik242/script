@@ -11,10 +11,10 @@ local bodyGyro = nil
 function module.Start(uiParent)
     if not uiParent then return end
 
-    -- 1. Кнопка ВКЛ/ВЫКЛ
+    -- Кнопка ВКЛ/ВЫКЛ
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, -10, 0, 40)
-    toggleBtn.LayoutOrder = 1 -- Порядок
+    toggleBtn.LayoutOrder = 2
     toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
     toggleBtn.Text = "🕊️ ВКЛЮЧИТЬ ПОЛЕТ"
     toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -22,17 +22,59 @@ function module.Start(uiParent)
     toggleBtn.Parent = uiParent
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
-    -- 2. Ползунок скорости
+    -- Ползунок скорости
+    local speedFrame = Instance.new("Frame")
+    speedFrame.Size = UDim2.new(1, -10, 0, 25)
+    speedFrame.LayoutOrder = 3
+    speedFrame.BackgroundTransparency = 1
+    speedFrame.Parent = uiParent
+
     local speedLabel = Instance.new("TextLabel")
-    speedLabel.Size = UDim2.new(1, -10, 0, 20)
-    speedLabel.LayoutOrder = 2
+    speedLabel.Size = UDim2.new(1, 0, 0, 15)
     speedLabel.BackgroundTransparency = 1
     speedLabel.Text = "Скорость: " .. flySpeed
     speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     speedLabel.Font = Enum.Font.Gotham
-    speedLabel.TextSize = 14
-    speedLabel.Parent = uiParent
+    speedLabel.TextSize = 12
+    speedLabel.Parent = speedFrame
 
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, 0, 0, 8)
+    sliderBg.Position = UDim2.new(0, 0, 0, 17)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    sliderBg.Parent = speedFrame
+    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(0, 4)
+
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    sliderFill.Parent = sliderBg
+    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 4)
+
+    local isDragging = false
+    local function updateSlider(percent)
+        percent = math.clamp(percent, 0, 1)
+        sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        flySpeed = 10 + (percent * 190) -- От 10 до 200
+        speedLabel.Text = "Скорость: " .. math.floor(flySpeed)
+    end
+
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = true end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouseX = input.Position.X
+            local sliderX = sliderBg.AbsolutePosition.X
+            local sliderWidth = sliderBg.AbsoluteSize.X
+            updateSlider((mouseX - sliderX) / sliderWidth)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
+    end)
+
+    -- Логика полета
     local function toggleFly()
         isFlying = not isFlying
         toggleBtn.Text = isFlying and "🕊️ ВЫКЛЮЧИТЬ ПОЛЕТ" or "🕊️ ВКЛЮЧИТЬ ПОЛЕТ"
@@ -56,10 +98,8 @@ function module.Start(uiParent)
                 bodyGyro.Parent = hrp
             end
         else
-            if bodyVelocity then bodyVelocity:Destroy() end
-            if bodyGyro then bodyGyro:Destroy() end
-            bodyVelocity = nil
-            bodyGyro = nil
+            if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
+            if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
         end
     end
 
@@ -75,7 +115,6 @@ function module.Start(uiParent)
             if hrp and bodyVelocity and bodyGyro then
                 bodyGyro.CFrame = cam.CFrame
                 local moveDir = Vector3.new(0, 0, 0)
-                local speed = flySpeed
                 
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -84,7 +123,7 @@ function module.Start(uiParent)
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
                 
-                bodyVelocity.Velocity = moveDir * speed
+                bodyVelocity.Velocity = moveDir * flySpeed
             end
         end
     end)
