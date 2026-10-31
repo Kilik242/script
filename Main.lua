@@ -1,7 +1,39 @@
--- 3. Загружаем модули в нужные вкладки
+-- Базовый URL
+local baseUrl = "https://raw.githubusercontent.com/Kilik242/script/main/"
+
+-- Функция загрузки с выводом ошибок
+local function loadModule(path)
+    local url = baseUrl .. path
+    print("📥 Загрузка: " .. url)
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    if success then 
+        return result 
+    else 
+        warn("❌ ОШИБКА В МОДУЛЕ: " .. path)
+        warn("Текст ошибки: " .. tostring(result))
+        return nil 
+    end
+end
+
+-- 1. Окно
+local UI = loadModule("UI/MainWindow.lua")
+if not UI then return end
+local mainFrame = UI.CreateWindow()
+if not mainFrame then return end
+
+-- 2. Вкладки
+local Tabs = loadModule("UI/Tabs.lua")
+local tabContainers = nil
+if Tabs and mainFrame then
+    tabContainers = Tabs.SetupTabs(mainFrame)
+end
+
+-- 3. Модули
 if tabContainers then
     
-    -- ================= ВКЛАДКА "БОЕВОЕ" =================
+    -- БОЕВОЕ
     local tabCombat = tabContainers["⚔️ Боевое"]
     if tabCombat then
         local KillAura = loadModule("Combat/KillAura.lua")
@@ -14,7 +46,7 @@ if tabContainers then
         if Noclip then Noclip.Start(tabCombat) end
     end
 
-    -- ================= ВКЛАДКА "СКАНЕРЫ" =================
+    -- СКАНЕРЫ
     local tabExplorer = tabContainers["📂 Сканеры"]
     if tabExplorer then
         local NPCScanner = loadModule("Explorer/NPCScanner.lua")
@@ -24,18 +56,22 @@ if tabContainers then
         if ChestScanner then ChestScanner.Start(tabExplorer) end
     end
 
-    -- ================= ВКЛАДКА "РУДЫ" =================
+    -- РУДЫ
     local tabOres = tabContainers["⛏️ Руды"]
     if tabOres then
         local OreRadar = loadModule("Explorer/OreRadar.lua")
         if OreRadar then OreRadar.Start(tabOres) end
     end
 
-    -- ================= ВКЛАДКА "ПРИКРЕПЛЕНИЕ" =================
+    -- ПРИКРЕПЛЕНИЕ
     local tabAttach = tabContainers["🧲 Прикрепление"]
     if tabAttach then
-        local Attach = loadModule("Combat/Attach.lua") -- Путь должен вести в Combat!
+        local Attach = loadModule("Combat/Attach.lua")
         if Attach then Attach.Start(tabAttach) end
     end
 
+else
+    warn("❌ Вкладки не созданы! tabContainers = nil")
 end
+
+print("✅ Kukish_REP успешно загружен!")
