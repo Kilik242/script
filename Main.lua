@@ -23,6 +23,12 @@ if not UI then return end
 local mainFrame = UI.CreateWindow()
 if not mainFrame then return end
 
+-- НОВОЕ: Водяной знак
+local Watermark = loadModule("UI/Watermark.lua")
+if Watermark then 
+    Watermark.Create(mainFrame) 
+end
+
 -- 2. Вкладки
 local Tabs = loadModule("UI/Tabs.lua")
 local tabContainers = nil
@@ -34,7 +40,7 @@ end
 if tabContainers then
     
     -- ================= ВКЛАДКА "БОЕВОЕ" =================
-    local tabCombat = tabContainers["⚔️ Боевое"]
+      local tabCombat = tabContainers["⚔️ Боевое"]
     if tabCombat then
         local KillAura = loadModule("Combat/KillAura.lua")
         if KillAura then KillAura.Start(tabCombat) end
@@ -44,8 +50,10 @@ if tabContainers then
 
         local Noclip = loadModule("Combat/Noclip.lua")
         if Noclip then Noclip.Start(tabCombat) end
+        
+        local AutoAttack = loadModule("Combat/AutoAttack.lua")
+        if AutoAttack then AutoAttack.Start(tabCombat) end
     end
-
     -- ================= ВКЛАДКА "СКАНЕРЫ" =================
     local tabExplorer = tabContainers["📂 Сканеры"]
     if tabExplorer then
