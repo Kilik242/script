@@ -1,10 +1,12 @@
 local module = {}
 local player = game.Players.LocalPlayer
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
 
 local isAutoAttackActive = false
+local attackDelay = 0.2 -- Задержка между ударами (по умолчанию)
 
--- СПИСКИ (как в Ауре, чтобы не бить торговцев)
+-- СПИСКИ (как в Ауре)
 local IGNORE_NAMES = {
     "poppy", "benji", "simon", "zack", "zacks", "trader", "shop", "merchant", 
     "seller", "guard", "npc", "postmaster", "banker", "repairing", 
@@ -34,32 +36,26 @@ local function isEnemy(obj)
     return false
 end
 
--- Поиск ближайшего врага (ищем по Торсу или Голове)
-local function getClosestEnemy()
+-- Поиск Торса врага в радиусе 15 метров
+local function getClosestEnemyTorso()
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     local myPos = char.HumanoidRootPart.Position
     
     local closest = nil
-    local minDist = 15 -- Радиус удара (15 метров)
+    local minDist = 15
     
     local partsInRadius = workspace:GetPartBoundsInRadius(myPos, minDist)
     
     for _, obj in ipairs(partsInRadius) do
-        if obj:IsA("Model") then
-            local humanoid = obj:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health > 0 and obj ~= char and isEnemy(obj) and not isIgnored(obj) then
-                -- Ищем Торс или Голову
-                local targetPart = obj:FindFirstChild("Torso") 
-                                 or obj:FindFirstChild("Head") 
-                                 or obj:FindFirstChild("HumanoidRootPart")
-                
-                if targetPart then
-                    local dist = (targetPart.Position - myPos).Magnitude
-                    if dist < minDist then
-                        closest = targetPart
-                        minDist = dist
-                    end
+        if obj.Name == "Torso" and obj.Parent:IsA("Model") then
+            local parentModel = obj.Parent
+            local humanoid = parentModel:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 and parentModel ~= char and isEnemy(parentModel) and not isIgnored(parentModel) then
+                local dist = (obj.Position - myPos).Magnitude
+                if dist < minDist then
+                    closest = obj
+                    minDist = dist
                 end
             end
         end
@@ -67,18 +63,32 @@ local function getClosestEnemy()
     return closest
 end
 
--- Клик мышкой (без изменения камеры)
-local function clickMouse()
+-- МУЛЬТИ-КЛИК (3 быстрых клика подряд)
+local function multiClick()
     if VirtualInputManager then
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        for i = 1, 3 do
+            -- Эмуляция нажатия (как на ПК, так и на телефоне)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+            task.wait(0.01)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+            task.wait(0.01)
+        end
+    end
+end
+
+-- Нажатие клавиши (для слота 2)
+local function pressKey(key)
+    if VirtualInputManager then
+        VirtualInputManager:SendKeyEvent(true, key, false, game)
         task.wait(0.05)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+        VirtualInputManager:SendKeyEvent(false, key, false, game)
     end
 end
 
 function module.Start(uiParent)
     if not uiParent then return end
 
+    -- 1. Кнопка ВКЛ/ВЫКЛ
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, -10, 0, 40)
     toggleBtn.LayoutOrder = 8
@@ -89,40 +99,79 @@ function module.Start(uiParent)
     toggleBtn.Parent = uiParent
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
 
+    -- 2. Ползунок скорости (задержки)
+    local speedFrame = Instance.new("Frame")
+    speedFrame.Size = UDim2.new(1, -10, 0, 25)
+    speedFrame.LayoutOrder = 9
+    speedFrame.BackgroundTransparency = 1
+    speedFrame.Parent = uiParent
+
+    local speedLabel = Instance.new("TextLabel")
+    speedLabel.Size = UDim2.new(1, 0, 0, 15)
+    speedLabel.BackgroundTransparency = 1
+    speedLabel.Text = "Скорость ударов: " .. attackDelay
+    speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    speedLabel.Font = Enum.Font.Gotham
+    speedLabel.TextSize = 12
+    speedLabel.Parent = speedFrame
+
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, 0, 0, 8)
+    sliderBg.Position = UDim2.new(0, 0, 0, 17)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    sliderBg.Parent = speedFrame
+    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(0, 4)
+
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    sliderFill.Parent = sliderBg
+    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 4)
+
+    local isDragging = false
+    local function updateSlider(percent)
+        percent = math.clamp(percent, 0, 1)
+        sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        attackDelay = 0.05 + (percent * 0.45) -- От 0.05 до 0.5 сек
+        speedLabel.Text = string.format("Скорость ударов: %.2f", attackDelay)
+    end
+
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = true end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouseX = input.Position.X
+            local sliderX = sliderBg.AbsolutePosition.X
+            local sliderWidth = sliderBg.AbsoluteSize.X
+            updateSlider((mouseX - sliderX) / sliderWidth)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
+    end)
+
+    -- Логика Авто-Атаки
     local function toggleAutoAttack()
         isAutoAttackActive = not isAutoAttackActive
         toggleBtn.Text = isAutoAttackActive and "⚔️ АВТО-АТАКА [ВКЛ]" or "⚔️ АВТО-АТАКА [ВЫКЛ]"
         toggleBtn.BackgroundColor3 = isAutoAttackActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 150)
 
         if isAutoAttackActive then
-            print("⚔️ Авто-атака ВКЛЮЧЕНА (радиус 15)")
+            print("⚔️ Авто-атака ВКЛЮЧЕНА (Мульти-Клик)")
             task.spawn(function()
                 while isAutoAttackActive do
-                    task.wait(0.15)
+                    task.wait(attackDelay)
                     
-                    local char = player.Character
-                    if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
-                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local targetTorso = getClosestEnemyTorso()
                     
-                    local target = getClosestEnemy()
-                    
-                    if target and hum then
-                        -- 1. Берем меч в руки
-                        local tool = char:FindFirstChildWhichIsA("Tool")
-                        if not tool then
-                            local backpack = player:FindFirstChild("Backpack")
-                            if backpack then
-                                tool = backpack:FindFirstChildWhichIsA("Tool")
-                            end
-                        end
+                    if targetTorso then
+                        -- Жмем "2" (достаем меч)
+                        pressKey(Enum.KeyCode.Two)
+                        task.wait(0.05)
                         
-                        if tool and tool.Parent ~= char then
-                            hum:EquipTool(tool)
-                            task.wait(0.1) -- Даем время надеть
-                        end
-                        
-                        -- 2. Бьем (кликаем)
-                        clickMouse()
+                        -- Бьем мульти-кликом (3 клика подряд)
+                        multiClick()
                     end
                 end
             end)
