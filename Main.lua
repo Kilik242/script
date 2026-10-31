@@ -63,15 +63,11 @@ if tabContainers then
         if OreRadar then OreRadar.Start(tabOres) end
     end
 
-    -- ПРИКРЕПЛЕНИЕ
+     -- ================= ВКЛАДКА "ПРИКРЕПЛЕНИЕ" =================
     local tabAttach = tabContainers["🧲 Прикрепление"]
     if tabAttach then
-        local Attach = loadModule("Combat/Attach.lua")
+        local Attach = loadModule("Combat/Attach.lua") -- Путь ведет в Combat
         if Attach then Attach.Start(tabAttach) end
+    else
+        warn("❌ Не найдена вкладка '🧲 Прикрепление'")
     end
-
-else
-    warn("❌ Вкладки не созданы! tabContainers = nil")
-end
-
-print("✅ Kukish_REP успешно загружен!")
