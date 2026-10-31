@@ -34,14 +34,14 @@ local function isEnemy(obj)
     return false
 end
 
--- Поиск ближайшего врага (быстрый)
+-- Поиск ближайшего врага (в радиусе меча, 15 метров)
 local function getClosestEnemy()
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     local myPos = char.HumanoidRootPart.Position
     
     local closest = nil
-    local minDist = 1000
+    local minDist = 15 -- РАДИУС МЕЧА (близко)
     
     local partsInRadius = workspace:GetPartBoundsInRadius(myPos, minDist)
     
@@ -61,15 +61,6 @@ local function getClosestEnemy()
         end
     end
     return closest
-end
-
--- Функция нажатия клавиши (для слота 2)
-local function pressKey(key)
-    if VirtualInputManager then
-        VirtualInputManager:SendKeyEvent(true, key, false, game)
-        task.wait(0.05)
-        VirtualInputManager:SendKeyEvent(false, key, false, game)
-    end
 end
 
 -- Клик мышкой
@@ -100,33 +91,36 @@ function module.Start(uiParent)
         toggleBtn.BackgroundColor3 = isAutoAttackActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 150)
 
         if isAutoAttackActive then
-            print("⚔️ Авто-атака ВКЛЮЧЕНА (слот 2)")
+            print("⚔️ Авто-атака ВКЛЮЧЕНА")
             task.spawn(function()
-                local cam = workspace.CurrentCamera
-                
                 while isAutoAttackActive do
                     task.wait(0.15)
                     
                     local char = player.Character
                     if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
                     
+                    -- Ищем цель в радиусе меча
                     local target = getClosestEnemy()
                     
-                    if target then
-                        -- 1. Эмулируем нажатие "2", чтобы взять меч
-                        pressKey(Enum.KeyCode.Two)
-                        task.wait(0.1)
+                    if target and hum then
+                        -- 1. БЕРЕМ МЕЧ В РУКИ (через EquipTool)
+                        local tool = char:FindFirstChildWhichIsA("Tool")
+                        if not tool then
+                            -- Если меча нет в руках, берем из рюкзака
+                            local backpack = player:FindFirstChild("Backpack")
+                            if backpack then
+                                tool = backpack:FindFirstChildWhichIsA("Tool")
+                            end
+                        end
                         
-                        -- 2. Запоминаем камеру и наводим на врага
-                        local oldCam = cam.CFrame
-                        cam.CFrame = CFrame.new(cam.CFrame.Position, target.Position)
+                        -- Если нашли инструмент, надеваем
+                        if tool and tool.Parent ~= char then
+                            hum:EquipTool(tool)
+                        end
                         
-                        -- 3. Ждем кадр и бьем
-                        task.wait(0.05)
+                        -- 2. БЬЕМ (кликаем)
                         clickMouse()
-                        
-                        -- 4. Возвращаем камеру
-                        cam.CFrame = oldCam
                     end
                 end
             end)
