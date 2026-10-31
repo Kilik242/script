@@ -22,22 +22,22 @@ if Tabs and mainFrame then
     tabContainers = Tabs.SetupTabs(mainFrame)
 end
 
--- 3. Боевые модули
+-- 3. Тестируем только Ауру
 if tabContainers then
     local tabCombat = tabContainers["⚔️ Боевое"]
     if tabCombat then
-        print("Загружаю Ауру...")
+        print("--- ТЕСТ: Загружаю KillAura ---")
         local KillAura = loadModule("Combat/KillAura.lua")
-        if KillAura then KillAura.Start(tabCombat) end
-
-        print("Загружаю Флай...")
-        local Fly = loadModule("Combat/Fly.lua")
-        if Fly then Fly.Start(tabCombat) end
-
-        print("Загружаю Ноклип...")
-        local Noclip = loadModule("Combat/Noclip.lua")
-        if Noclip then Noclip.Start(tabCombat) end
+        if KillAura then 
+            print("KillAura загружена, вызываю Start...")
+            KillAura.Start(tabCombat) 
+            print("KillAura.Start вызван!")
+        else
+            print("KillAura НЕ загружена (nil)")
+        end
+    else
+        print("Вкладка 'Боевое' не найдена")
     end
 end
 
-print("✅ Тест Боевых модулей завершен!")
+print("✅ Тест завершен!")
